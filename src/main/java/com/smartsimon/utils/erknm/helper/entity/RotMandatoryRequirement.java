@@ -18,6 +18,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -33,7 +34,7 @@ import java.util.UUID;
 @Table(schema = "catalogs_external", name = "rot_mandatory_requirement")
 @SQLDelete(sql = "UPDATE catalogs_external.rot_mandatory_requirement set last_version=false where id=?")
 
-public class RotMandatoryRequirement {
+public class RotMandatoryRequirement implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
