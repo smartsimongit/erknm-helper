@@ -1,4 +1,4 @@
-package com.smartsimon.utils.erknm_helper.model;
+package com.smartsimon.utils.erknm.helper.model;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

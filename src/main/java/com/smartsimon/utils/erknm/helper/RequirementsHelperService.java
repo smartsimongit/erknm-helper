@@ -1,13 +1,13 @@
-package com.smartsimon.utils.erknm_helper;
+package com.smartsimon.utils.erknm.helper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.smartsimon.utils.erknm_helper.model.KnmRequirementsMandatoryRequirementPreviewDTO;
-import com.smartsimon.utils.erknm_helper.model.KnmRequirementsPreviewDTO;
-import com.smartsimon.utils.erknm_helper.model.KnmRequirementsStructuralUnitPreviewDTO;
-import com.smartsimon.utils.erknm_helper.model.PmDTO;
+import com.smartsimon.utils.erknm.helper.model.KnmRequirementsMandatoryRequirementPreviewDTO;
+import com.smartsimon.utils.erknm.helper.model.KnmRequirementsPreviewDTO;
+import com.smartsimon.utils.erknm.helper.model.KnmRequirementsStructuralUnitPreviewDTO;
+import com.smartsimon.utils.erknm.helper.model.PmDTO;
+import lombok.AllArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -19,22 +19,22 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Objects;
 
+@AllArgsConstructor
 @Component
-public class Test {
+public class RequirementsHelperService {
 
-    @Autowired
+
     private ObjectMapper objectMapper;
     private static int count = 0;
 
-    public static void main(String[] args) throws IOException {
-
+    public String start() throws IOException {
+        count = 0;
         String jsonData = readFileFromResources("test.txt");
-        ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-
+        objectMapper.registerModule(new JavaTimeModule());
         PmDTO pm = objectMapper.readValue(jsonData, PmDTO.class);
-
         pm.getRequirements().forEach(req -> checkAvailable(req));
-        System.out.println(count);
+
+        return String.format("processed %d requirements", count);
     }
 
     private static void checkAvailable(KnmRequirementsPreviewDTO req) {
