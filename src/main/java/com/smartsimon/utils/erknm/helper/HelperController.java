@@ -22,7 +22,7 @@ public class HelperController {
             summary = "replace non-existent requirements"
     )
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public String persons() throws IOException {
-        return reqService.start();
+    public void persons() throws IOException {
+          reqService.start();
     }
 }
