@@ -1,13 +1,16 @@
 package com.smartsimon.utils.erknm.helper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.smartsimon.utils.erknm.helper.entity.RotMandatoryRequirement;
+import com.smartsimon.utils.erknm.helper.entity.RotStructuralUnit;
 import com.smartsimon.utils.erknm.helper.model.KnmRequirementsMandatoryRequirementPreviewDTO;
 import com.smartsimon.utils.erknm.helper.model.KnmRequirementsPreviewDTO;
 import com.smartsimon.utils.erknm.helper.model.KnmRequirementsStructuralUnitPreviewDTO;
 import com.smartsimon.utils.erknm.helper.model.PmDTO;
 import com.smartsimon.utils.erknm.helper.repository.RotMandatoryRequirementRepository;
+import com.smartsimon.utils.erknm.helper.repository.RotStructuralUnitRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.java.Log;
 import org.apache.commons.collections4.CollectionUtils;
@@ -23,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -33,27 +37,33 @@ public class RequirementsHelperService {
 
 
     private RotMandatoryRequirementRepository rotMandatoryRequirementRepository;
+    private RotStructuralUnitRepository rotStructuralUnitRepository;
     private ObjectMapper objectMapper;
     private static int count = 0;
+    private static int successFullCount = 0;
 
     public void start() throws IOException {
         count = 0;
+        successFullCount = 0;
         String jsonData = readFileFromResources("input.txt");
         objectMapper.registerModule(new JavaTimeModule());
         PmDTO pm = objectMapper.readValue(jsonData, PmDTO.class);
         pm.getRequirements().forEach(req -> changeNonExisting(req));
-        saveToFileResources(jsonData);
+
+        saveToFileResources(pm);
         System.out.println(String.format("processed %d requirements", count));
     }
 
-    private void saveToFileResources(String jsonData) throws IOException {
-
-        FileUtils.writeStringToFile(
-                new File("output.json"),
-                jsonData,
-                StandardCharsets.UTF_8,
-                false
-        );
+    private void saveToFileResources(PmDTO pmDTO) throws IOException {
+        objectMapper.writeValue(new File("output.json"), pmDTO);
+//        ObjectWriter ow = objectMapper.writer().withDefaultPrettyPrinter();
+//        String newJsonData = ow.writeValueAsString(pmDTO);
+//        FileUtils.writeStringToFile(
+//                new File("output.json"),
+//                jsonData,
+//                StandardCharsets.UTF_8,
+//                false
+//        );
 
     }
 
@@ -68,8 +78,27 @@ public class RequirementsHelperService {
     }
 
     private void setNewMandatory(Long notExistingId, KnmRequirementsStructuralUnitPreviewDTO structuralUnit) {
-//todo
-        log.info(String.format("%d", notExistingId));
+        log.info(String.format("notExistingId %d", notExistingId));
+        Optional<RotStructuralUnit> structuralUnitOptional = rotStructuralUnitRepository.findById(structuralUnit.getId());
+        if (structuralUnitOptional.isEmpty()) {
+            log.info(String.format("structuralUnit is not exist %d", notExistingId));
+            return;
+        }
+        List<Long> usedMrrIds = structuralUnit.getMandatoryRequirements().stream().map(KnmRequirementsMandatoryRequirementPreviewDTO::getId).toList();
+
+        Optional<KnmRequirementsMandatoryRequirementPreviewDTO> wrongMrrOptional = structuralUnit.getMandatoryRequirements().stream().filter(mandatoryReq -> mandatoryReq.getId().equals(notExistingId)).findFirst();
+        Optional<RotMandatoryRequirement> mrr = structuralUnitOptional.get().getMandatoryRequirements()
+                .stream()
+                .filter(mrrNew -> usedMrrIds.stream().noneMatch(used -> used.equals(mrrNew.getId())))
+                .findFirst();
+
+        if (mrr.isPresent()) {
+            wrongMrrOptional.get().setId(mrr.get().getId());
+            successFullCount++;
+            log.info(String.format("new id is %d", mrr.get().getId()));
+        } else {
+            log.info(String.format("structuralUnit  %d don't have suitable mrr", structuralUnit.getId()));
+        }
     }
 
     private boolean isMandatoryNotFound(KnmRequirementsMandatoryRequirementPreviewDTO mandatoryReq) {
