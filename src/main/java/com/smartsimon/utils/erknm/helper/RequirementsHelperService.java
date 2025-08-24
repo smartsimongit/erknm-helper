@@ -15,16 +15,12 @@ import lombok.AllArgsConstructor;
 import lombok.extern.java.Log;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FileUtils;
-import org.springframework.core.io.DefaultResourceLoader;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
@@ -56,14 +52,14 @@ public class RequirementsHelperService {
 
     private void saveToFileResources(PmDTO pmDTO) throws IOException {
         objectMapper.writeValue(new File("output.json"), pmDTO);
-//        ObjectWriter ow = objectMapper.writer().withDefaultPrettyPrinter();
-//        String newJsonData = ow.writeValueAsString(pmDTO);
-//        FileUtils.writeStringToFile(
-//                new File("output.json"),
-//                jsonData,
-//                StandardCharsets.UTF_8,
-//                false
-//        );
+        ObjectWriter ow = objectMapper.writer().withDefaultPrettyPrinter();
+        String newJsonData = ow.writeValueAsString(pmDTO);
+        FileUtils.writeStringToFile(
+                new File("output.json"),
+                newJsonData,
+                StandardCharsets.UTF_8,
+                false
+        );
 
     }
 
@@ -111,18 +107,15 @@ public class RequirementsHelperService {
         return false;
     }
 
-    public String readFileFromResources(String fileName) throws IOException {
-        ResourceLoader resourceLoader = new DefaultResourceLoader();
-        Resource resource = resourceLoader.getResource("classpath:" + fileName);
-        InputStream inputStream = resource.getInputStream();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-        StringBuilder stringBuilder = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            stringBuilder.append(line);
+    public String readFileFromResources(String path) throws IOException {
+        String normalized = path.startsWith("/") ? path.substring(1) : path;
+        try (InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream(normalized)) {
+            if (in == null) {
+                throw new FileNotFoundException("Resource not found: " + path);
+            }
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         }
-        reader.close();
-        return stringBuilder.toString();
+
     }
 
 }
